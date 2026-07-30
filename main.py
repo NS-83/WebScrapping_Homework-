@@ -4,7 +4,8 @@ from bs4 import BeautifulSoup
 import re
 from fake_headers import Headers
 
-KEYWORDS = ['дизайн', 'фото', 'web', 'python']
+# KEYWORDS = ['дизайн', 'фото', 'web', 'python']
+KEYWORDS = ['вещей', 'читальный']
 URL = 'https://habr.com/ru/articles/'
 
 
@@ -21,6 +22,7 @@ soup = BeautifulSoup(html_doc, 'lxml')
 articles_list = soup.select('div.article-snippet')
 
 for article in articles_list:
+    texts_list = []
     time_tag = article.select_one('time')
     if time_tag:
         datetime_string = time_tag.get('datetime')
@@ -50,19 +52,27 @@ for article in articles_list:
     else:
         article_header = ''
         article_link = ''
+    if article_header:
+        texts_list.append(article_header)
+
+    article_keywords_tags_container = article.select_one('div.tm-publication-hubs__container')
+    if article_keywords_tags_container:
+        article_keywords_tags = article_keywords_tags_container.select('span.tm-publication-hub__link-container')
+        if article_keywords_tags:
+            keywords_list = [keywords_tag.select_one('span').text.strip() for keywords_tag in article_keywords_tags]
+            texts_list.extend(keywords_list)
 
     lead_tag = article.select_one('div.lead')
     if lead_tag:
         preview_tags = lead_tag.select('p')
         if preview_tags:
-            preview_text = ' '.join(p.text.strip() for p in preview_tags) if preview_tags else ''
-        else:
-            preview_text = ''
-    else:
-        preview_text = ''
-    if keyword_pattern.search(preview_text):
-        found_article_string = f'{article_time} - {article_header} - {article_link}'
-        print(found_article_string)
+            preview_texts = [preview_tag.text.strip() for preview_tag in preview_tags]
+            texts_list.extend(preview_texts)
+
+    article_preview_text = ' '.join(texts_list)
+    if keyword_pattern.search(article_preview_text):
+         found_article_string = f'{article_time} - {article_header} - {article_link}'
+         print(found_article_string)
 
 
 
